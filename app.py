@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
+import matplotlib.pyplot as plt
 
 # ===== PASSWORD =====
 password = st.text_input("Masukkan password:", type="password")
@@ -31,6 +32,7 @@ if uploaded_file:
         st.error("Tidak ada kolom gene_")
     else:
         st.write(f"Jumlah gen: {len(gen_cols)}")
+        st.dataframe(data[gen_cols].head())
         
         if st.button("Analisis"):
             X = data[gen_cols].values
@@ -42,12 +44,41 @@ if uploaded_file:
                     pad = np.zeros((X.shape[0], 20531 - X.shape[1]))
                     X = np.hstack([X, pad])
             
-            prediction = model.predict(X)
-            probability = model.predict_proba(X)
+            predictions = model.predict(X)
+            probabilities = model.predict_proba(X)
             
-            st.success(f"Subtipe: {prediction[0]}")
-            st.write(f"Confidence: {probability[0].max():.2%}")
+            st.success(f"Jumlah sampel: {len(predictions)}")
             
-            st.write("### Probabilitas per Kelas")
-            for i, cls in enumerate(model.classes_):
-                st.write(f"{cls}: {probability[0][i]:.2%}")
+            hasil = pd.DataFrame({
+                "Sampel": range(1, len(predictions)+1),
+                "Prediksi": predictions,
+                "Confidence": probabilities.max(axis=1)
+            })
+            st.dataframe(hasil)
+            
+            st.write("### Probabilitas Sampel Pertama")
+            fig, ax = plt.subplots()
+            ax.bar(model.classes_, probabilities[0])
+            ax.set_ylabel("Probabilitas")
+            st.pyplot(fig)
+            
+            st.write("### Interpretasi")
+            pred = predictions[0]
+            if pred == "BRCA":
+                st.info("BRCA: Kanker payudara. Terkait mutasi BRCA1/BRCA2.")
+            elif pred == "KIRC":
+                st.info("KIRC: Kanker ginjal. Terkait mutasi VHL.")
+            elif pred == "LUAD":
+                st.info("LUAD: Kanker paru. Terkait mutasi EGFR/KRAS.")
+            elif pred == "PRAD":
+                st.info("PRAD: Kanker prostat. Terkait mutasi AR.")
+            elif pred == "COAD":
+                st.info("COAD: Kanker usus. Terkait mutasi APC/KRAS.")
+            
+            csv = hasil.to_csv(index=False)
+            st.download_button(
+                label="Download Hasil",
+                data=csv,
+                file_name="hasil_prediksi.csv",
+                mime="text/csv"
+            )

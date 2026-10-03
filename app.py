@@ -14,7 +14,7 @@ if password != "opsi2027":
 st.title("PERSIST-HOM")
 st.subheader("Klasifikasi Kanker Berbasis Topologi")
 
-model = pickle.load(open("hasil/model.pkl", "rb"))
+model = pickle.load(open("model.pkl", "rb"))
 
 uploaded_file = st.file_uploader("Upload CSV", type="csv")
 
